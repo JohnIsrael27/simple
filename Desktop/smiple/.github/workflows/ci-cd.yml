@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 env:
-  IMAGE_NAME: yourdockerhubusername/chatbot  # <-- change this to your Docker Hub repo name
+  IMAGE_NAME: scizor27/chatbot  # <-- change this to your Docker Hub repo name
   DOCKER_REGISTRY: docker.io
 
 jobs:
