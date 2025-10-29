@@ -1,4 +1,4 @@
-name: CI/CD Pipeline - ChatbotForDevops
+name: CI/CD Pipeline - simple
 
 on:
   push:
