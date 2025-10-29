@@ -1,17 +1,11 @@
-Set-Content -Path .\Jenkinsfile -Value @'
 pipeline {
   agent any
 
   environment {
-    // Change these to your values
     DOCKER_REGISTRY = "docker.io"
-    IMAGE_NAME = "yourdockerhubusername/chatbot"   // <-- CHANGE THIS
+    IMAGE_NAME = "scizor27/chatbot"
     TAG = "${env.BUILD_NUMBER}"
-    DOCKER_CREDENTIALS_ID = "dockerhub-creds"      // <-- set this in Jenkins Credentials
-    SSH_CREDENTIALS_ID = "deploy-ssh"              // <-- set this in Jenkins Credentials if using SSH deploy
-    DEPLOY_HOST = "your.deploy.server.ip"          // <-- CHANGE or provide via Jenkins job/params
-    DEPLOY_USER = "ubuntu"
-    DEPLOY_PATH = "/home/ubuntu"
+    DOCKER_CREDENTIALS_ID = "dockerhub-creds"
   }
 
   stages {
@@ -21,38 +15,24 @@ pipeline {
       }
     }
 
-    stage('Setup Python') {
+    stage('Install Deps & Test') {
       steps {
-        echo "Setting up Python..."
-        sh 'python3 -V || true'
-        // ensure pip and test deps available
-        sh 'python3 -m pip install --upgrade pip || true'
-        sh 'pip3 install -r requirements.txt || true'
-      }
-    }
-
-    stage('Test') {
-      steps {
-        echo "Running tests..."
-        // Run tests; fail the build if tests fail
+        sh 'python3 -m pip install --upgrade pip'
+        sh 'pip3 install -r requirements.txt'
         sh 'pytest -q'
       }
     }
 
     stage('Build Docker Image') {
       steps {
-        script {
-          // Build the Docker image and tag with build number and latest
-          sh "docker build -t ${IMAGE_NAME}:${TAG} ."
-          sh "docker tag ${IMAGE_NAME}:${TAG} ${IMAGE_NAME}:latest"
-        }
+        sh "docker build -t ${IMAGE_NAME}:${TAG} ."
+        sh "docker tag ${IMAGE_NAME}:${TAG} ${IMAGE_NAME}:latest"
       }
     }
 
-    stage('Push to Registry') {
+    stage('Push to Docker Hub') {
       steps {
         script {
-          // Use Jenkins stored docker credentials to log in and push
           docker.withRegistry("https://${DOCKER_REGISTRY}", DOCKER_CREDENTIALS_ID) {
             sh "docker push ${IMAGE_NAME}:${TAG}"
             sh "docker push ${IMAGE_NAME}:latest"
@@ -60,37 +40,14 @@ pipeline {
         }
       }
     }
-
-    stage('Deploy (SSH)') {
-      when {
-        expression { return env.DEPLOY_HOST && env.SSH_CREDENTIALS_ID }
-      }
-      steps {
-        sshagent (credentials: [SSH_CREDENTIALS_ID]) {
-          // Pull & run the new image on remote host. Adjust commands as needed for your server.
-          sh """
-            ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} '
-              docker pull ${IMAGE_NAME}:${TAG} || exit 1
-              docker stop chatbot || true
-              docker rm chatbot || true
-              docker run -d --name chatbot -p 5000:5000 --restart unless-stopped ${IMAGE_NAME}:${TAG}
-            '
-          """
-        }
-      }
-    }
   }
 
   post {
     success {
-      echo "Pipeline completed successfully."
+      echo "✅ Successfully built and pushed ${IMAGE_NAME}:${TAG}"
     }
     failure {
-      echo "Pipeline failed. Check the logs."
-    }
-    always {
-      cleanWs()
+      echo "❌ Build failed. Check logs."
     }
   }
 }
-'@
