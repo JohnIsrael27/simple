@@ -1,0 +1,8 @@
+[
+  {"keywords": ["hi", "hello", "hey"], "reply": "Hey there! How can I assist you today?"},
+  {"keywords": ["help"], "reply": "Sure! I can help you with common queries."},
+  {"keywords": ["hours"], "reply": "We’re open 9 AM to 5 PM, Monday to Friday."},
+  {"keywords": ["contact"], "reply": "You can reach us at support@example.com."},
+  {"keywords": ["bye", "goodbye"], "reply": "Goodbye! Have a great day!", "fallback": false},
+  {"keywords": [], "reply": "Sorry, I didn’t quite get that. Try again?", "fallback": true}
+]
